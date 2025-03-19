@@ -40,12 +40,22 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
             return parseFunctionDefinition();
         } else if (currentToken.value == "return") {
             return parseReturnStatement();
+        } else if (currentToken.value == "foreach") {
+            return parseForeachLoop();
+        } else if (currentToken.value == "event") {
+            return parseEventListener();
+        } else if (currentToken.value == "npc") {
+            return parseNPCAction();
+        } else if (currentToken.value == "for") {
+            return parseForLoop();
+        } else if (currentToken.value == "while") {
+            return parseWhileLoop();
+        } else if (currentToken.value == "input") {
+            return parseInputStatement();
         } else {
             std::cerr << "Unknown keyword: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
             throw std::runtime_error("Unknown keyword at line " + std::to_string(currentToken.line));
         }
-    } else if (currentToken.type == TokenType::Symbol) {
-        return parseExpression();
     } else {
         std::cerr << "Unknown statement type: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
         throw std::runtime_error("Unknown statement type at line " + std::to_string(currentToken.line));
@@ -162,6 +172,192 @@ std::unique_ptr<ASTNode> Parser::parseReturnStatement() {
     return std::make_unique<ReturnNode>(std::move(expression));
 }
 
+std::unique_ptr<ASTNode> Parser::parseForeachLoop() {
+    advance();  // Skip 'foreach'
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected identifier after 'foreach', got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected identifier after 'foreach' at line " + std::to_string(currentToken.line));
+    }
+    std::string identifier = currentToken.value;
+    advance();  // Skip identifier
+
+    if (currentToken.type != TokenType::Keyword || currentToken.value != "in") {
+        std::cerr << "Expected 'in' after identifier, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected 'in' after identifier at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip 'in'
+
+    auto collection = parseExpression();
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
+        std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '{' to start loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '{'
+
+    auto body = std::make_unique<BlockNode>();
+    while (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        body->statements.push_back(parseStatement());
+        if (currentToken.type == TokenType::Semicolon) {
+            advance();
+        }
+    }
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        std::cerr << "Expected '}' to end loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '}' to end loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '}'
+
+    return std::make_unique<ForeachLoopNode>(identifier, std::move(collection), std::move(body));
+}
+
+std::unique_ptr<ASTNode> Parser::parseEventListener() {
+    advance();  // Skip 'event'
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected event name after 'event', got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected event name after 'event' at line " + std::to_string(currentToken.line));
+    }
+    std::string event_name = currentToken.value;
+    advance();  // Skip event name
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
+        std::cerr << "Expected '{' to start event listener body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '{' to start event listener body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '{'
+
+    auto body = std::make_unique<BlockNode>();
+    while (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        body->statements.push_back(parseStatement());
+        if (currentToken.type == TokenType::Semicolon) {
+            advance();
+        }
+    }
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        std::cerr << "Expected '}' to end event listener body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '}' to end event listener body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '}'
+
+    return std::make_unique<EventListenerNode>(event_name, std::move(body));
+}
+
+std::unique_ptr<ASTNode> Parser::parseNPCAction() {
+    advance();  // Skip 'npc'
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected NPC name after 'npc', got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected NPC name after 'npc' at line " + std::to_string(currentToken.line));
+    }
+    std::string npc_name = currentToken.value;
+    advance();  // Skip NPC name
+
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected action after NPC name, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected action after NPC name at line " + std::to_string(currentToken.line));
+    }
+    std::string action = currentToken.value;
+    advance();  // Skip action
+
+    if (currentToken.type == TokenType::Semicolon) {
+        advance();
+    }
+
+    return std::make_unique<NPCActionNode>(npc_name, action);
+}
+
+std::unique_ptr<ASTNode> Parser::parseForLoop() {
+    advance();  // Skip 'for'
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected identifier after 'for', got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected identifier after 'for' at line " + std::to_string(currentToken.line));
+    }
+    std::string identifier = currentToken.value;
+    advance();  // Skip identifier
+
+    if (currentToken.type != TokenType::Operator || currentToken.value != "=") {
+        std::cerr << "Expected '=' after identifier, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '=' after identifier at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '='
+
+    auto lower_bound = parseExpression();
+
+    if (currentToken.type != TokenType::Keyword || currentToken.value != "to") {
+        std::cerr << "Expected 'to' after lower bound, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected 'to' after lower bound at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip 'to'
+
+    auto upper_bound = parseExpression();
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
+        std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '{' to start loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '{'
+
+    auto body = std::make_unique<BlockNode>();
+    while (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        body->statements.push_back(parseStatement());
+        if (currentToken.type == TokenType::Semicolon) {
+            advance();
+        }
+    }
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        std::cerr << "Expected '}' to end loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '}' to end loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '}'
+
+    return std::make_unique<ForLoopNode>(identifier, std::move(lower_bound), std::move(upper_bound), std::move(body));
+}
+
+std::unique_ptr<ASTNode> Parser::parseWhileLoop() {
+    advance();  // Skip 'while'
+    auto condition = parseExpression();
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
+        std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '{' to start loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '{'
+
+    auto body = std::make_unique<BlockNode>();
+    while (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        body->statements.push_back(parseStatement());
+        if (currentToken.type == TokenType::Semicolon) {
+            advance();
+        }
+    }
+
+    if (currentToken.type != TokenType::Symbol || currentToken.value != "}") {
+        std::cerr << "Expected '}' to end loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected '}' to end loop body at line " + std::to_string(currentToken.line));
+    }
+    advance();  // Skip '}'
+
+    return std::make_unique<WhileLoopNode>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<ASTNode> Parser::parseInputStatement() {
+    advance();  // Skip 'input'
+    if (currentToken.type != TokenType::Identifier) {
+        std::cerr << "Expected identifier after 'input', got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected identifier after 'input' at line " + std::to_string(currentToken.line));
+    }
+    std::string identifier = currentToken.value;
+    advance();  // Skip identifier
+
+    if (currentToken.type == TokenType::Semicolon) {
+        advance();
+    }
+
+    return std::make_unique<InputNode>(identifier);
+}
+
 std::unique_ptr<ASTNode> Parser::parseExpression() {
     auto lhs = parsePrimary();
     while (currentToken.type == TokenType::Symbol && (currentToken.value == "+" || currentToken.value == "-" || currentToken.value == "*" || currentToken.value == "/")) {
@@ -187,6 +383,15 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
         std::string value = currentToken.value;
         advance();
         return std::make_unique<StringNode>(value);
+    } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
+        advance();  // Skip '('
+        auto expression = parseExpression();
+        if (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
+            std::cerr << "Expected ')' after expression, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+            throw std::runtime_error("Expected ')' after expression at line " + std::to_string(currentToken.line));
+        }
+        advance();  // Skip ')'
+        return expression;
     } else {
         std::cerr << "Unknown primary expression type: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
         throw std::runtime_error("Unknown primary expression type at line " + std::to_string(currentToken.line));

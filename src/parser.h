@@ -24,9 +24,14 @@ private:
     std::unique_ptr<ASTNode> parsePrintStatement();
     std::unique_ptr<ASTNode> parseFunctionDefinition();
     std::unique_ptr<ASTNode> parseReturnStatement();
+    std::unique_ptr<ASTNode> parseForeachLoop();
+    std::unique_ptr<ASTNode> parseEventListener();
+    std::unique_ptr<ASTNode> parseNPCAction();
+    std::unique_ptr<ASTNode> parseForLoop();
+    std::unique_ptr<ASTNode> parseWhileLoop();
+    std::unique_ptr<ASTNode> parseInputStatement();
     std::unique_ptr<ASTNode> parseExpression();
     std::unique_ptr<ASTNode> parsePrimary();
-    std::unique_ptr<ASTNode> parseBinaryExpression();
 };
 
 #endif

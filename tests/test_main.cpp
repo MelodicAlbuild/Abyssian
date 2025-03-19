@@ -70,7 +70,7 @@ bool runTest(const TestCase& testCase) {
 }
 
 int main() {
-    std::string testDir = "test_cases";
+    std::string testDir = "../../tests/test_cases";
     auto testCases = getTestCases(testDir);
 
     int passed = 0;

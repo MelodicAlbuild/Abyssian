@@ -12,8 +12,8 @@ print add(2, 3);  // Expected output: 5
 print multiply(4, 5);  // Expected output: 20
 
 // Variable Assignments
-let a = 10;
-let b = 20;
+a = 10;
+b = 20;
 print a;  // Expected output: 10
 print b;  // Expected output: 20
 
@@ -26,19 +26,19 @@ print "Hello, World!";  // Expected output: Hello, World!
 print 42;  // Expected output: 42
 
 // For Loop
-for i = 1 to 3 {
+for i in 1..3 {
     print i;  // Expected output: 1 2 3
 }
 
 // While Loop
-let count = 1;
+count = 1;
 while count <= 3 {
     print count;  // Expected output: 1 2 3
     count = count + 1;
 }
 
 // Foreach Loop
-let numbers = [1, 2, 3];
+numbers = [1, 2, 3];
 foreach num in numbers {
     print num;  // Expected output: 1 2 3
 }

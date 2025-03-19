@@ -33,8 +33,8 @@ else()
     target_compile_options(runTests PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-variable)
 endif()
 
-# Copy test_cases folder to the build directory
-add_custom_command(TARGET runTests POST_BUILD
+add_custom_target(copy-files ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/tests/test_cases $<TARGET_FILE_DIR:runTests>/test_cases
+        ${CMAKE_BINARY_DIR}/tests/test_cases
+        ${CMAKE_BINARY_DIR}/test_cases
 )

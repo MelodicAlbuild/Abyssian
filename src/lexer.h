@@ -34,11 +34,13 @@ private:
 
     void advance();
     void skipWhitespace();
+    void skipComment();
     Token identifier();
     Token number();
     Token string();
     Token symbol_or_operator();
     Token nextToken();
+    char peek() const;
 };
 
 #endif // LEXER_H

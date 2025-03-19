@@ -25,6 +25,15 @@ void Lexer::skipWhitespace() {
     }
 }
 
+void Lexer::skipComment() {
+    while (currentChar != '\n' && currentChar != '\0') {
+        advance();
+    }
+    if (currentChar == '\n') {
+        advance(); // Skip the newline character
+    }
+}
+
 Token Lexer::identifier() {
     std::string result;
     int line = currentLine;
@@ -83,6 +92,11 @@ Token Lexer::nextToken() {
             continue;
         }
 
+        if (currentChar == '/' && peek() == '/') {
+            skipComment();
+            continue;
+        }
+
         if (std::isalpha(currentChar) || currentChar == '_') {
             return identifier();
         }
@@ -106,6 +120,13 @@ Token Lexer::nextToken() {
     }
 
     return {TokenType::EndOfFile, "", currentLine};
+}
+
+char Lexer::peek() const {
+    if (currentPosition + 1 < source.size()) {
+        return source[currentPosition + 1];
+    }
+    return '\0';
 }
 
 std::vector<Token> Lexer::tokenize() {

@@ -1,0 +1,50 @@
+// Function Definitions
+fun add(x, y) {
+    return x + y;
+}
+
+fun multiply(x, y) {
+    return x * y;
+}
+
+// Function Calls
+print add(2, 3);  // Expected output: 5
+print multiply(4, 5);  // Expected output: 20
+
+// Variable Assignments
+let a = 10;
+let b = 20;
+print a;  // Expected output: 10
+print b;  // Expected output: 20
+
+// Reassign Variables
+a = 30;
+print a;  // Expected output: 30
+
+// Print Statements
+print "Hello, World!";  // Expected output: Hello, World!
+print 42;  // Expected output: 42
+
+// For Loop
+for i = 1 to 3 {
+    print i;  // Expected output: 1 2 3
+}
+
+// While Loop
+let count = 1;
+while count <= 3 {
+    print count;  // Expected output: 1 2 3
+    count = count + 1;
+}
+
+// Foreach Loop
+let numbers = [1, 2, 3];
+foreach num in numbers {
+    print num;  // Expected output: 1 2 3
+}
+
+// Return Statements
+fun greet(name) {
+    return "Hello, " + name;
+}
+print greet("Alice");  // Expected output: Hello, Alice

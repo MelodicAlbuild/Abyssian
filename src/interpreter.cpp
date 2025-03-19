@@ -90,10 +90,10 @@ void Interpreter::interpret_print(std::unique_ptr<PrintNode> print) {
         if (output.back() == '.') {
             output.pop_back();
         }
-        std::cout << output;  // Removed std::endl
+        std::cout << output << std::endl;  // Removed std::endl
     } else {
         // Value is not a number
-        std::cout << value;  // Removed std::endl
+        std::cout << value << std::endl;  // Removed std::endl
     }
 }
 

@@ -340,6 +340,7 @@ std::unique_ptr<ASTNode> Parser::parseWhileLoop() {
     advance();  // Skip 'while'
 
     auto condition = parseExpression();  // Parse the condition
+    advance(); // Skip condition
 
     if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
         std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;

@@ -87,16 +87,31 @@ std::unique_ptr<ASTNode> Parser::parseAssignmentOrFunctionCall() {
 std::unique_ptr<ASTNode> Parser::parseFunctionCall(const std::string& identifier) {
     auto call = std::make_unique<FunctionCallNode>(identifier);
     advance();  // Skip '('
-    while (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
+
+    std::cout << "Parsing function call arguments " << currentToken.value << std::endl;
+
+    while (currentToken.value != ")") {
         call->arguments.push_back(parseExpression());
-        if (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
+        if (currentToken.value == ",") {
             advance();  // Skip ','
+        } else if (currentToken.value == ")") {
+            break;  // Found closing parenthesis
+        } else {
+            std::cerr << "Expected ',' or ')' in function call, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+            throw std::runtime_error("Expected ',' or ')' in function call at line " + std::to_string(currentToken.line));
         }
     }
+
+    if (currentToken.value != ")") {
+        std::cerr << "Expected ')' after function arguments, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Expected ')' after function arguments at line " + std::to_string(currentToken.line));
+    }
     advance();  // Skip ')'
+
     if (currentToken.type == TokenType::Semicolon) {
         advance();
     }
+
     return call;
 }
 
@@ -323,6 +338,7 @@ std::unique_ptr<ASTNode> Parser::parseForLoop() {
 
 std::unique_ptr<ASTNode> Parser::parseWhileLoop() {
     advance();  // Skip 'while'
+
     auto condition = parseExpression();  // Parse the condition
 
     if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
@@ -376,7 +392,7 @@ std::unique_ptr<ASTNode> Parser::parseExpression() {
         advance();  // Skip operator
         auto rhs = parseTerm();
         lhs = std::make_unique<BinaryExpressionNode>(std::move(lhs), op, std::move(rhs));
-    }
+            }
 
     return lhs;
 }
@@ -402,7 +418,17 @@ std::unique_ptr<ASTNode> Parser::parseFactor() {
     } else if (currentToken.type == TokenType::Identifier) {
         std::string identifier = currentToken.value;
         advance();  // Skip identifier
+
+        if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
+            // Function call
+            return parseFunctionCall(identifier);
+        }
+
         return std::make_unique<IdentifierNode>(identifier);
+    } else if (currentToken.type == TokenType::String) {
+        std::string value = currentToken.value;
+        advance();  // Skip string
+        return std::make_unique<StringNode>(value);
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         advance();  // Skip '('
         auto expression = parseExpression();

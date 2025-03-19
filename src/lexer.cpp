@@ -113,6 +113,11 @@ Token Lexer::symbol_or_operator() {
         }
     }
 
+    if (result == "[" || result == "]") {
+        std::cout << "Identified array index symbol: " << result << std::endl;
+        return {TokenType::Symbol, result, line};
+    }
+
     std::cout << "Identified symbol: " << result << std::endl;
     return {TokenType::Symbol, result, line};
 }

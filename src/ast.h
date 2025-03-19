@@ -222,4 +222,22 @@ public:
     }
 };
 
+// Node for array literals
+class ArrayLiteralNode : public ASTNode {
+public:
+    std::vector<std::unique_ptr<ASTNode>> elements;
+
+    ArrayLiteralNode() = default;
+};
+
+// Node for array indexing
+class ArrayIndexNode : public ASTNode {
+public:
+    std::string arrayName;
+    std::unique_ptr<ASTNode> index;
+
+    ArrayIndexNode(const std::string& arrayName, std::unique_ptr<ASTNode> index)
+        : arrayName(arrayName), index(std::move(index)) {}
+};
+
 #endif

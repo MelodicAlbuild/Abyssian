@@ -12,6 +12,7 @@ enum class TokenType {
     Symbol,
     Operator,
     Semicolon,
+    ArrayIndex,
     EndOfFile
 };
 

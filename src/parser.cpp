@@ -340,7 +340,6 @@ std::unique_ptr<ASTNode> Parser::parseWhileLoop() {
     advance();  // Skip 'while'
 
     auto condition = parseExpression();  // Parse the condition
-    advance(); // Skip condition
 
     if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
         std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
@@ -384,7 +383,7 @@ std::unique_ptr<ASTNode> Parser::parseInputStatement() {
 std::unique_ptr<ASTNode> Parser::parseExpression() {
     auto lhs = parseTerm();
 
-    while (currentToken.type == TokenType::Symbol &&
+    while ((currentToken.type == TokenType::Symbol || currentToken.type == TokenType::Operator) &&
            (currentToken.value == "+" || currentToken.value == "-" ||
             currentToken.value == "<" || currentToken.value == ">" ||
             currentToken.value == "<=" || currentToken.value == ">=" ||
@@ -412,7 +411,12 @@ std::unique_ptr<ASTNode> Parser::parseTerm() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseFactor() {
-    if (currentToken.type == TokenType::Number) {
+    if (currentToken.type == TokenType::Symbol && (currentToken.value == "-" || currentToken.value == "+")) {
+        std::string op = currentToken.value;
+        advance();  // Skip the unary operator
+        auto operand = parseFactor();  // Parse the operand
+        return std::make_unique<UnaryExpressionNode>(op, std::move(operand));
+    } else if (currentToken.type == TokenType::Number) {
         auto number = std::make_unique<NumberNode>(std::stod(currentToken.value));
         advance();  // Skip number
         return number;
@@ -423,6 +427,16 @@ std::unique_ptr<ASTNode> Parser::parseFactor() {
         if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
             // Function call
             return parseFunctionCall(identifier);
+        } else if (currentToken.type == TokenType::Symbol && currentToken.value == "[") {
+            // Array indexing
+            advance();  // Skip '['
+            auto index = parseExpression();
+            if (currentToken.type != TokenType::Symbol || currentToken.value != "]") {
+                std::cerr << "Expected ']' after array index, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+                throw std::runtime_error("Expected ']' after array index at line " + std::to_string(currentToken.line));
+            }
+            advance();  // Skip ']'
+            return std::make_unique<ArrayIndexNode>(identifier, std::move(index));
         }
 
         return std::make_unique<IdentifierNode>(identifier);
@@ -430,6 +444,27 @@ std::unique_ptr<ASTNode> Parser::parseFactor() {
         std::string value = currentToken.value;
         advance();  // Skip string
         return std::make_unique<StringNode>(value);
+    } else if (currentToken.type == TokenType::Symbol && currentToken.value == "[") {
+        // Array literal
+        advance();  // Skip '['
+        auto arrayLiteral = std::make_unique<ArrayLiteralNode>();
+        while (currentToken.type != TokenType::Symbol || currentToken.value != "]") {
+            arrayLiteral->elements.push_back(parseExpression());
+            if (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
+                advance();  // Skip ','
+            } else if (currentToken.type == TokenType::Symbol && currentToken.value == "]") {
+                break;  // Found closing bracket
+            } else {
+                std::cerr << "Expected ',' or ']' in array literal, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+                throw std::runtime_error("Expected ',' or ']' in array literal at line " + std::to_string(currentToken.line));
+            }
+        }
+        if (currentToken.type != TokenType::Symbol || currentToken.value != "]") {
+            std::cerr << "Expected ']' after array literal, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+            throw std::runtime_error("Expected ']' after array literal at line " + std::to_string(currentToken.line));
+        }
+        advance();  // Skip ']'
+        return arrayLiteral;
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         advance();  // Skip '('
         auto expression = parseExpression();

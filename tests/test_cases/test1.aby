@@ -1,0 +1,2 @@
+npcHealth = 100;
+print npcHealth;

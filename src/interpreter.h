@@ -11,7 +11,7 @@
 class Interpreter {
 public:
     void interpret(std::unique_ptr<ASTNode> ast);
-    std::optional<std::string> execute(); // Changed return type to std::optional<std::string>
+    std::optional<std::string> execute();
 
 private:
     void interpret_node(std::unique_ptr<ASTNode> node, std::optional<std::string>& return_value);
@@ -27,14 +27,15 @@ private:
     void interpret_npc_action(std::unique_ptr<NPCActionNode> npc_action);
     void interpret_return(std::unique_ptr<ReturnNode> return_node, std::optional<std::string>& return_value);
     std::string interpret_binary_expression(std::unique_ptr<BinaryExpressionNode> binary_expression);
+    std::string interpret_function_call(std::unique_ptr<FunctionCallNode> function_call);
 
     std::string evaluate_expression(std::unique_ptr<ASTNode> node);
     bool is_number(const std::string& s);
 
     std::unordered_map<std::string, std::string> variables;
-    std::unordered_map<std::string, std::unique_ptr<ASTNode>> functions;
-    std::unordered_map<std::string, std::vector<std::unique_ptr<ASTNode>>> events;
-    std::unique_ptr<BlockNode> ast; // Store the AST for execution
+    std::unordered_map<std::string, std::unique_ptr<FunctionDeclarationNode>> functions;
+    std::unordered_map<std::string, std::vector<std::unique_ptr<EventListenerNode>>> events;
+    std::unique_ptr<BlockNode> ast;
 };
 
 #endif // INTERPRETER_H

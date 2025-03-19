@@ -77,23 +77,27 @@ std::unique_ptr<ASTNode> Parser::parseAssignmentOrFunctionCall() {
         return std::make_unique<AssignmentNode>(identifier, std::move(expression));
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         // Function call
-        auto call = std::make_unique<FunctionCallNode>(identifier);
-        advance();  // Skip '('
-        while (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
-            call->arguments.push_back(parseExpression());
-            if (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
-                advance();  // Skip ','
-            }
-        }
-        advance();  // Skip ')'
-        if (currentToken.type == TokenType::Semicolon) {
-            advance();
-        }
-        return call;
+        return parseFunctionCall(identifier);
     } else {
         std::cerr << "Invalid assignment or function call statement: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
         throw std::runtime_error("Invalid assignment or function call statement at line " + std::to_string(currentToken.line));
     }
+}
+
+std::unique_ptr<ASTNode> Parser::parseFunctionCall(const std::string& identifier) {
+    auto call = std::make_unique<FunctionCallNode>(identifier);
+    advance();  // Skip '('
+    while (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
+        call->arguments.push_back(parseExpression());
+        if (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
+            advance();  // Skip ','
+        }
+    }
+    advance();  // Skip ')'
+    if (currentToken.type == TokenType::Semicolon) {
+        advance();
+    }
+    return call;
 }
 
 std::unique_ptr<ASTNode> Parser::parsePrintStatement() {
@@ -376,6 +380,9 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
     if (currentToken.type == TokenType::Identifier) {
         std::string identifier = currentToken.value;
         advance();
+        if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
+            return parseFunctionCall(identifier);
+        }
         return std::make_unique<IdentifierNode>(identifier);
     } else if (currentToken.type == TokenType::Number) {
         double value = std::stod(currentToken.value);
@@ -388,11 +395,6 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         advance();  // Skip '('
         auto expression = parseExpression();
-        while (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
-            advance();  // Skip ','
-            auto nextExpression = parseExpression();
-            // Combine expressions if needed, e.g., into a tuple or argument list, depending on the language design
-        }
         if (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
             std::cerr << "Expected ')' after expression, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
             throw std::runtime_error("Expected ')' after expression at line " + std::to_string(currentToken.line));

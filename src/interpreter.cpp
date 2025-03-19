@@ -45,6 +45,14 @@ void Interpreter::interpret_node(std::unique_ptr<ASTNode> node, std::optional<st
         interpret_return(std::unique_ptr<ReturnNode>(static_cast<ReturnNode*>(node.release())), return_value);
     } else if (auto binary_expression = dynamic_cast<BinaryExpressionNode*>(node.get())) {
         return_value = interpret_binary_expression(std::unique_ptr<BinaryExpressionNode>(static_cast<BinaryExpressionNode*>(node.release())));
+    } else if (auto identifier_node = dynamic_cast<IdentifierNode*>(node.get())) {
+        return_value = variables[identifier_node->identifier];
+    } else if (auto number_node = dynamic_cast<NumberNode*>(node.get())) {
+        return_value = std::to_string(number_node->value);
+    } else if (auto string_node = dynamic_cast<StringNode*>(node.get())) {
+        return_value = string_node->value;
+    } else if (auto function_call = dynamic_cast<FunctionCallNode*>(node.get())) {
+        return_value = interpret_function_call(std::unique_ptr<FunctionCallNode>(static_cast<FunctionCallNode*>(node.release())));
     } else {
         throw std::runtime_error("Unknown AST node");
     }
@@ -82,10 +90,10 @@ void Interpreter::interpret_print(std::unique_ptr<PrintNode> print) {
         if (output.back() == '.') {
             output.pop_back();
         }
-        std::cout << output << std::endl;
+        std::cout << output;  // Removed std::endl
     } else {
         // Value is not a number
-        std::cout << value << std::endl;
+        std::cout << value;  // Removed std::endl
     }
 }
 
@@ -193,8 +201,32 @@ std::string Interpreter::evaluate_expression(std::unique_ptr<ASTNode> node) {
         return str->value;
     } else if (auto binary_expression = dynamic_cast<BinaryExpressionNode*>(node.get())) {
         return interpret_binary_expression(std::unique_ptr<BinaryExpressionNode>(static_cast<BinaryExpressionNode*>(node.release())));
+    } else if (auto function_call = dynamic_cast<FunctionCallNode*>(node.get())) {
+        return interpret_function_call(std::unique_ptr<FunctionCallNode>(static_cast<FunctionCallNode*>(node.release())));
     }
     throw std::runtime_error("Unknown expression node");
+}
+
+std::string Interpreter::interpret_function_call(std::unique_ptr<FunctionCallNode> function_call) {
+    auto it = functions.find(function_call->identifier);
+    if (it == functions.end()) {
+        throw std::runtime_error("Function not found: " + function_call->identifier);
+    }
+    auto& function = it->second;
+    if (function->parameters.size() != function_call->arguments.size()) {
+        throw std::runtime_error("Argument count mismatch in function call: " + function_call->identifier);
+    }
+    std::unordered_map<std::string, std::string> old_variables = variables;
+    for (size_t i = 0; i < function->parameters.size(); ++i) {
+        variables[function->parameters[i]] = evaluate_expression(function_call->arguments[i]->clone());
+    }
+    std::optional<std::string> return_value;
+    interpret_block(std::unique_ptr<BlockNode>(static_cast<BlockNode*>(function->body->clone().release())), return_value);
+    variables = old_variables;
+    if (return_value.has_value()) {
+        return return_value.value();
+    }
+    return "";
 }
 
 bool Interpreter::is_number(const std::string& s) {

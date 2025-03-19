@@ -21,6 +21,7 @@ private:
     void advance();
     std::unique_ptr<ASTNode> parseStatement();
     std::unique_ptr<ASTNode> parseAssignmentOrFunctionCall();
+    std::unique_ptr<ASTNode> parseFunctionCall(const std::string& identifier);
     std::unique_ptr<ASTNode> parsePrintStatement();
     std::unique_ptr<ASTNode> parseFunctionDefinition();
     std::unique_ptr<ASTNode> parseReturnStatement();

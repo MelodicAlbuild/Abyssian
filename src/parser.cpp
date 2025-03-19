@@ -31,9 +31,7 @@ std::unique_ptr<ASTNode> Parser::parse() {
 std::unique_ptr<ASTNode> Parser::parseStatement() {
     std::cout << "Parsing statement starting with token: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
 
-    if (currentToken.type == TokenType::Identifier) {
-        return parseAssignmentOrFunctionCall();
-    } else if (currentToken.type == TokenType::Keyword) {
+    if (currentToken.type == TokenType::Keyword) {
         if (currentToken.value == "print") {
             return parsePrintStatement();
         } else if (currentToken.value == "fun") {
@@ -56,6 +54,8 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
             std::cerr << "Unknown keyword: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
             throw std::runtime_error("Unknown keyword at line " + std::to_string(currentToken.line));
         }
+    } else if (currentToken.type == TokenType::Identifier) {
+        return parseAssignmentOrFunctionCall();
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         return parseExpression();
     } else {
@@ -323,7 +323,7 @@ std::unique_ptr<ASTNode> Parser::parseForLoop() {
 
 std::unique_ptr<ASTNode> Parser::parseWhileLoop() {
     advance();  // Skip 'while'
-    auto condition = parseExpression();
+    auto condition = parseExpression();  // Parse the condition
 
     if (currentToken.type != TokenType::Symbol || currentToken.value != "{") {
         std::cerr << "Expected '{' to start loop body, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
@@ -365,14 +365,57 @@ std::unique_ptr<ASTNode> Parser::parseInputStatement() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseExpression() {
-    auto lhs = parsePrimary();
-    while (currentToken.type == TokenType::Symbol && (currentToken.value == "+" || currentToken.value == "-" || currentToken.value == "*" || currentToken.value == "/")) {
+    auto lhs = parseTerm();
+
+    while (currentToken.type == TokenType::Symbol &&
+           (currentToken.value == "+" || currentToken.value == "-" ||
+            currentToken.value == "<" || currentToken.value == ">" ||
+            currentToken.value == "<=" || currentToken.value == ">=" ||
+            currentToken.value == "==" || currentToken.value == "!=")) {
         std::string op = currentToken.value;
         advance();  // Skip operator
-        auto rhs = parsePrimary();
+        auto rhs = parseTerm();
         lhs = std::make_unique<BinaryExpressionNode>(std::move(lhs), op, std::move(rhs));
     }
+
     return lhs;
+}
+
+std::unique_ptr<ASTNode> Parser::parseTerm() {
+    auto lhs = parseFactor();
+
+    while (currentToken.type == TokenType::Symbol && (currentToken.value == "*" || currentToken.value == "/")) {
+        std::string op = currentToken.value;
+        advance();  // Skip operator
+        auto rhs = parseFactor();
+        lhs = std::make_unique<BinaryExpressionNode>(std::move(lhs), op, std::move(rhs));
+    }
+
+    return lhs;
+}
+
+std::unique_ptr<ASTNode> Parser::parseFactor() {
+    if (currentToken.type == TokenType::Number) {
+        auto number = std::make_unique<NumberNode>(std::stod(currentToken.value));
+        advance();  // Skip number
+        return number;
+    } else if (currentToken.type == TokenType::Identifier) {
+        std::string identifier = currentToken.value;
+        advance();  // Skip identifier
+        return std::make_unique<IdentifierNode>(identifier);
+    } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
+        advance();  // Skip '('
+        auto expression = parseExpression();
+        if (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
+            std::cerr << "Expected ')' after expression, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+            throw std::runtime_error("Expected ')' after expression at line " + std::to_string(currentToken.line));
+        }
+        advance();  // Skip ')'
+        return expression;
+    } else {
+        std::cerr << "Unexpected token: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+        throw std::runtime_error("Unexpected token at line " + std::to_string(currentToken.line));
+    }
 }
 
 std::unique_ptr<ASTNode> Parser::parsePrimary() {

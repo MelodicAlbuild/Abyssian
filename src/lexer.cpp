@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include <cctype>
 #include <iostream>
+#include <unordered_set>
 
 Lexer::Lexer(const std::string& source) : source(source), currentPosition(0), currentLine(1) {
     currentChar = source[currentPosition];
@@ -41,7 +42,12 @@ Token Lexer::identifier() {
         result += currentChar;
         advance();
     }
-    if (result == "print" || result == "fun" || result == "return") {
+    static const std::unordered_set<std::string> keywords = {
+        "print", "fun", "return", "for", "while", "foreach",
+        "event", "npc", "input", "do", "end", "if", "elif", "else", "to",
+        "true", "false", "and", "or", "not"
+    };
+    if (keywords.find(result) != keywords.end()) {
         std::cout << "Identified keyword: " << result << std::endl;
         return {TokenType::Keyword, result, line};
     }
@@ -74,15 +80,41 @@ Token Lexer::string() {
 }
 
 Token Lexer::symbol_or_operator() {
-    char sym = currentChar;
+    std::string result(1, currentChar);
     int line = currentLine;
     advance();
-    if (sym == '=') {
+
+    if (result == "=") {
+        if (currentChar == '=') {
+            result += currentChar;
+            advance();
+            std::cout << "Identified operator: ==" << std::endl;
+            return {TokenType::Operator, result, line};
+        }
         std::cout << "Identified operator: =" << std::endl;
-        return {TokenType::Operator, "=", line};
+        return {TokenType::Operator, result, line};
     }
-    std::cout << "Identified symbol: " << sym << std::endl;
-    return {TokenType::Symbol, std::string(1, sym), line};
+
+    if (result == "<" || result == ">") {
+        if (currentChar == '=') {
+            result += currentChar;
+            advance();
+        }
+        std::cout << "Identified operator: " << result << std::endl;
+        return {TokenType::Operator, result, line};
+    }
+
+    if (result == "!") {
+        if (currentChar == '=') {
+            result += currentChar;
+            advance();
+            std::cout << "Identified operator: !=" << std::endl;
+            return {TokenType::Operator, result, line};
+        }
+    }
+
+    std::cout << "Identified symbol: " << result << std::endl;
+    return {TokenType::Symbol, result, line};
 }
 
 Token Lexer::nextToken() {

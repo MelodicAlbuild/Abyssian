@@ -36,7 +36,7 @@ std::string readFile(const std::string& filePath) {
 
 bool runTest(const TestCase& testCase) {
     std::stringstream nullout;
-    std::streambuf* originalCout = std::cout.rdbuf(nullout.rdbuf());
+    //std::streambuf* originalCout = std::cout.rdbuf(nullout.rdbuf());
 
     // Run the interpreter on the test input file
     std::string input = readFile(testCase.inputFile);
@@ -51,7 +51,7 @@ bool runTest(const TestCase& testCase) {
     Interpreter interpreter;
     interpreter.interpret(std::move(ast));
 
-    std::cout.rdbuf(originalCout);
+    //std::cout.rdbuf(originalCout);
 
     // Redirect std::cout to a string stream for capturing the output
     std::stringstream outputStream;

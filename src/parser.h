@@ -32,6 +32,11 @@ private:
     std::unique_ptr<ASTNode> parseWhileLoop();
     std::unique_ptr<ASTNode> parseInputStatement();
     std::unique_ptr<ASTNode> parseExpression();
+
+    std::unique_ptr<ASTNode> parseTerm();
+
+    std::unique_ptr<ASTNode> parseFactor();
+
     std::unique_ptr<ASTNode> parsePrimary();
 };
 

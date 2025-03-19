@@ -22,6 +22,9 @@ private:
     void interpret_function_declaration(std::unique_ptr<FunctionDeclarationNode> function);
     void interpret_for_loop(std::unique_ptr<ForLoopNode> for_loop, std::optional<std::string>& return_value);
     void interpret_while_loop(std::unique_ptr<WhileLoopNode> while_loop, std::optional<std::string>& return_value);
+
+    bool evaluate_condition(std::unique_ptr<ASTNode> condition);
+
     void interpret_foreach_loop(std::unique_ptr<ForeachLoopNode> foreach_loop, std::optional<std::string>& return_value);
     void interpret_event_listener(std::unique_ptr<EventListenerNode> event_listener);
     void interpret_npc_action(std::unique_ptr<NPCActionNode> npc_action);

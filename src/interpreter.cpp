@@ -132,12 +132,17 @@ void Interpreter::interpret_for_loop(std::unique_ptr<ForLoopNode> for_loop, std:
 }
 
 void Interpreter::interpret_while_loop(std::unique_ptr<WhileLoopNode> while_loop, std::optional<std::string>& return_value) {
-    while (evaluate_expression(while_loop->condition->clone()) == "true") {
+    while (evaluate_condition(while_loop->condition->clone())) {
         interpret_node(while_loop->body->clone(), return_value);
         if (return_value.has_value()) {
             break;
         }
     }
+}
+
+bool Interpreter::evaluate_condition(std::unique_ptr<ASTNode> condition) {
+    std::string result = evaluate_expression(std::move(condition));
+    return result == "true";
 }
 
 void Interpreter::interpret_foreach_loop(std::unique_ptr<ForeachLoopNode> foreach_loop, std::optional<std::string>& return_value) {
@@ -184,6 +189,18 @@ std::string Interpreter::interpret_binary_expression(std::unique_ptr<BinaryExpre
                 throw std::runtime_error("Division by zero");
             }
             return std::to_string(left_num / right_num);
+        } else if (binary_expression->op == "and") {
+            return (left == "true" && right == "true") ? "true" : "false";
+        } else if (binary_expression->op == "or") {
+            return (left == "true" || right == "true") ? "true" : "false";
+        } else if (binary_expression->op == "<") {
+            return (left_num < right_num) ? "true" : "false";
+        } else if (binary_expression->op == ">") {
+            return (left_num > right_num) ? "true" : "false";
+        } else if (binary_expression->op == "<=") {
+            return (left_num <= right_num) ? "true" : "false";
+        } else if (binary_expression->op == ">=") {
+            return (left_num >= right_num) ? "true" : "false";
         } else {
             throw std::runtime_error("Unknown binary operator: " + binary_expression->op);
         }

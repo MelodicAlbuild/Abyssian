@@ -56,6 +56,8 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
             std::cerr << "Unknown keyword: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
             throw std::runtime_error("Unknown keyword at line " + std::to_string(currentToken.line));
         }
+    } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
+        return parseExpression();
     } else {
         std::cerr << "Unknown statement type: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
         throw std::runtime_error("Unknown statement type at line " + std::to_string(currentToken.line));
@@ -386,6 +388,11 @@ std::unique_ptr<ASTNode> Parser::parsePrimary() {
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         advance();  // Skip '('
         auto expression = parseExpression();
+        while (currentToken.type == TokenType::Symbol && currentToken.value == ",") {
+            advance();  // Skip ','
+            auto nextExpression = parseExpression();
+            // Combine expressions if needed, e.g., into a tuple or argument list, depending on the language design
+        }
         if (currentToken.type != TokenType::Symbol || currentToken.value != ")") {
             std::cerr << "Expected ')' after expression, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
             throw std::runtime_error("Expected ')' after expression at line " + std::to_string(currentToken.line));

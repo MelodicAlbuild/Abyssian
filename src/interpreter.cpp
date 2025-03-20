@@ -53,6 +53,10 @@ void Interpreter::interpret_node(std::unique_ptr<ASTNode> node, std::optional<st
         return_value = string_node->value;
     } else if (auto function_call = dynamic_cast<FunctionCallNode*>(node.get())) {
         return_value = interpret_function_call(std::unique_ptr<FunctionCallNode>(static_cast<FunctionCallNode*>(node.release())));
+    } else if (auto array_literal = dynamic_cast<ArrayLiteralNode*>(node.get())) {
+        return_value = interpret_array_literal(std::unique_ptr<ArrayLiteralNode>(static_cast<ArrayLiteralNode*>(node.release())));
+    } else if (auto array_index = dynamic_cast<ArrayIndexNode*>(node.get())) {
+        return_value = interpret_array_index(std::unique_ptr<ArrayIndexNode>(static_cast<ArrayIndexNode*>(node.release())));
     } else {
         throw std::runtime_error("Unknown AST node");
     }
@@ -111,7 +115,6 @@ void Interpreter::interpret_for_loop(std::unique_ptr<ForLoopNode> for_loop, std:
     try {
         std::string lower_bound_str = evaluate_expression(for_loop->lower_bound->clone());
         std::string upper_bound_str = evaluate_expression(for_loop->upper_bound->clone());
-        std::cout << "For loop bounds: lower=" << lower_bound_str << " upper=" << upper_bound_str << std::endl;
         if (!is_number(lower_bound_str) || !is_number(upper_bound_str)) {
             throw std::invalid_argument("Bounds are not valid numbers");
         }
@@ -204,6 +207,9 @@ std::string Interpreter::interpret_binary_expression(std::unique_ptr<BinaryExpre
         } else {
             throw std::runtime_error("Unknown binary operator: " + binary_expression->op);
         }
+    } else if (binary_expression->op == "+") {
+        // Concatenate strings
+        return left + right;
     } else {
         throw std::runtime_error("Invalid operands for binary operator: " + binary_expression->op);
     }
@@ -220,6 +226,10 @@ std::string Interpreter::evaluate_expression(std::unique_ptr<ASTNode> node) {
         return interpret_binary_expression(std::unique_ptr<BinaryExpressionNode>(static_cast<BinaryExpressionNode*>(node.release())));
     } else if (auto function_call = dynamic_cast<FunctionCallNode*>(node.get())) {
         return interpret_function_call(std::unique_ptr<FunctionCallNode>(static_cast<FunctionCallNode*>(node.release())));
+    } else if (auto array_literal = dynamic_cast<ArrayLiteralNode*>(node.get())) {
+        return interpret_array_literal(std::unique_ptr<ArrayLiteralNode>(static_cast<ArrayLiteralNode*>(node.release())));
+    } else if (auto array_index = dynamic_cast<ArrayIndexNode*>(node.get())) {
+        return interpret_array_index(std::unique_ptr<ArrayIndexNode>(static_cast<ArrayIndexNode*>(node.release())));
     }
     throw std::runtime_error("Unknown expression node");
 }
@@ -249,4 +259,62 @@ std::string Interpreter::interpret_function_call(std::unique_ptr<FunctionCallNod
 bool Interpreter::is_number(const std::string& s) {
     std::regex number_regex("^-?\\d+(\\.\\d+)?$");
     return std::regex_match(s, number_regex);
+}
+
+std::string Interpreter::interpret_array_literal(std::unique_ptr<ArrayLiteralNode> array_literal) {
+    std::string result;
+    for (const auto& element : array_literal->elements) {
+        if (!result.empty()) {
+            result += ",";
+        }
+        std::string value = evaluate_expression(element->clone());
+
+        // Format the value to include decimals only if necessary
+        std::stringstream ss(value);
+        double number;
+        ss >> number;
+
+        if (!ss.fail() && ss.eof()) {
+            // Value is a number
+            std::stringstream formatted_value;
+            formatted_value << std::fixed << std::setprecision(6) << number;
+            std::string output = formatted_value.str();
+            // Remove trailing zeros and the decimal point if not needed
+            output.erase(output.find_last_not_of('0') + 1, std::string::npos);
+            if (output.back() == '.') {
+                output.pop_back();
+            }
+            result += output;
+        } else {
+            // Value is not a number
+            result += value;
+        }
+    }
+    return result;  // Return the formatted array without extra brackets
+}
+
+std::string Interpreter::interpret_array_index(std::unique_ptr<ArrayIndexNode> array_index) {
+    std::string array_name = array_index->arrayName;
+    std::string index_str = evaluate_expression(array_index->index->clone());
+    if (!is_number(index_str)) {
+        throw std::runtime_error("Array index is not a valid number: " + index_str);
+    }
+    int index = std::stoi(index_str);
+
+    std::string array_value = variables[array_name];
+    if (array_value.front() != '[' || array_value.back() != ']') {
+        throw std::runtime_error("Variable is not an array: " + array_name);
+    }
+    array_value = array_value.substr(1, array_value.size() - 2);  // Remove brackets
+
+    std::istringstream ss(array_value);
+    std::string element;
+    int current_index = 0;
+    while (std::getline(ss, element, ',')) {
+        if (current_index == index) {
+            return element;
+        }
+        ++current_index;
+    }
+    throw std::runtime_error("Array index out of bounds: " + index_str);
 }

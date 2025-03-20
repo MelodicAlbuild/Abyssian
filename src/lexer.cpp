@@ -45,7 +45,7 @@ Token Lexer::identifier() {
     static const std::unordered_set<std::string> keywords = {
         "print", "fun", "return", "for", "while", "foreach",
         "event", "npc", "input", "do", "end", "if", "elif", "else", "to",
-        "true", "false", "and", "or", "not"
+        "true", "false", "and", "or", "not", "in"
     };
     if (keywords.find(result) != keywords.end()) {
         std::cout << "Identified keyword: " << result << std::endl;

@@ -78,6 +78,16 @@ std::unique_ptr<ASTNode> Parser::parseAssignmentOrFunctionCall() {
     } else if (currentToken.type == TokenType::Symbol && currentToken.value == "(") {
         // Function call
         return parseFunctionCall(identifier);
+    } else if (currentToken.type == TokenType::Symbol && currentToken.value == "[") {
+        // Array indexing
+        advance();  // Skip '['
+        auto index = parseExpression();
+        if (currentToken.type != TokenType::Symbol || currentToken.value != "]") {
+            std::cerr << "Expected ']' after array index, got " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
+            throw std::runtime_error("Expected ']' after array index at line " + std::to_string(currentToken.line));
+        }
+        advance();  // Skip ']'
+        return std::make_unique<ArrayIndexNode>(identifier, std::move(index));
     } else {
         std::cerr << "Invalid assignment or function call statement: " << currentToken.value << " (line " << currentToken.line << ")" << std::endl;
         throw std::runtime_error("Invalid assignment or function call statement at line " + std::to_string(currentToken.line));
@@ -411,12 +421,7 @@ std::unique_ptr<ASTNode> Parser::parseTerm() {
 }
 
 std::unique_ptr<ASTNode> Parser::parseFactor() {
-    if (currentToken.type == TokenType::Symbol && (currentToken.value == "-" || currentToken.value == "+")) {
-        std::string op = currentToken.value;
-        advance();  // Skip the unary operator
-        auto operand = parseFactor();  // Parse the operand
-        return std::make_unique<UnaryExpressionNode>(op, std::move(operand));
-    } else if (currentToken.type == TokenType::Number) {
+    if (currentToken.type == TokenType::Number) {
         auto number = std::make_unique<NumberNode>(std::stod(currentToken.value));
         advance();  // Skip number
         return number;

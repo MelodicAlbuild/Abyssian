@@ -35,6 +35,10 @@ private:
     std::string evaluate_expression(std::unique_ptr<ASTNode> node);
     bool is_number(const std::string& s);
 
+    // New function declarations for array handling
+    std::string interpret_array_literal(std::unique_ptr<ArrayLiteralNode> array_literal);
+    std::string interpret_array_index(std::unique_ptr<ArrayIndexNode> array_index);
+
     std::unordered_map<std::string, std::string> variables;
     std::unordered_map<std::string, std::unique_ptr<FunctionDeclarationNode>> functions;
     std::unordered_map<std::string, std::vector<std::unique_ptr<EventListenerNode>>> events;
